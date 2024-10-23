@@ -6,6 +6,7 @@ import icon from '../../resources/icons/icon.png?asset'
 
 import { getVideoFromPath } from './utils'
 import ipc from './ipc'
+import { startExpressServer } from './server'
 
 import { IpcEvents } from '../common/ipcEvents'
 
@@ -106,6 +107,7 @@ function initApp(): void {
       ipc.register()
 
       createWindow()
+      startExpressServer(mainWindow)
 
       app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()

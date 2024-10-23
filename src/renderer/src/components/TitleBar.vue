@@ -36,7 +36,7 @@ useIpcRendererOn(IpcEvents.WIN_MAX_REPLY, (_, arg: boolean) => {
     <div class="titlebar__opr">
       <ul class="toolbar">
         <li @click="openVideo"><a class="codicon codicon-open"></a></li>
-        <li @click="emit('toggle-playlist')"><a class="codicon codicon-right-layout"></a></li>
+        <li @click="emit('toggle-playlist')" v-if="false"><a class="codicon codicon-right-layout"></a></li>
       </ul>
       <div v-if="isWindow" class="win-control">
         <div

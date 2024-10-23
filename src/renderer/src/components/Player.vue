@@ -11,11 +11,28 @@ import { IpcEvents } from '../../../common/ipcEvents'
 const playerRef = ref<HTMLVideoElement>()
 const player = ref<videojs.Player>()
 const currentVideo = ref<VideoInfo | null>()
+const playerD = ref<videojs.Player>()
+const playerDRef = ref<HTMLVideoElement>()
+const status = ref(0)
 
 const play = (video: VideoInfo): void => {
   if (currentVideo.value?.path !== video.path) {
     currentVideo.value = video
-    if (video) player.value?.src(`file:///${video.path}`)
+    if (video) {
+      if (status.value == 0) {
+        playerD.value?.src(`file:///${video.path}`)
+        setTimeout(() => {
+          status.value = 1
+          player.value?.reset()
+        }, 20)
+      } else {
+        player.value?.src(`file:///${video.path}`)
+        setTimeout(() => {
+          status.value = 0
+          playerD.value?.reset()
+        }, 20)
+      }
+    }
   }
 }
 
@@ -47,7 +64,7 @@ const handleDrop = async (e: DragEvent): Promise<void> => {
 onMounted(() => {
   if (playerRef.value) {
     player.value = videojs(playerRef.value, {
-      controls: true,
+      controls: false,
       autoplay: true,
       fill: true,
       controlBar: {
@@ -72,6 +89,33 @@ onMounted(() => {
     const keyboard = new Keyboard(player.value)
     keyboard.bind()
   }
+  if (playerDRef.value) {
+    playerD.value = videojs(playerDRef.value, {
+      controls: false,
+      autoplay: true,
+      fill: true,
+      controlBar: {
+        volumePanel: { inline: false, volumeControl: { vertical: true } },
+        children: [
+          'playToggle',
+          'volumePanel',
+          'currentTimeDisplay',
+          'progressControl',
+          'durationDisplay',
+          'fullscreenToggle'
+        ]
+      },
+      userActions: {
+        hotkeys: function (event): void {
+          if (player.value) {
+            Keyboard.handlerKeyCode(player.value, event.keyCode)
+          }
+        }
+      }
+    })
+    const keyboard = new Keyboard(playerD.value)
+    keyboard.bind()
+  }
 })
 
 onUnmounted(() => {
@@ -86,7 +130,12 @@ defineExpose({
 
 <template>
   <div class="player" @drop="handleDrop" @dragenter.prevent @dragover.prevent>
-    <video ref="playerRef" class="video-js"></video>
+    <template class="play-container" :class="{ active: status != 0 }">
+      <video ref="playerRef" class="video-js"></video>
+    </template>
+    <template class="play-container" :class="{ active: status == 0 }">
+      <video ref="playerDRef" class="video-js"></video>
+    </template>
   </div>
 </template>
 
@@ -96,5 +145,13 @@ defineExpose({
 
 .player {
   flex: 1;
+}
+.play-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.active {
+  display: none;
 }
 </style>
