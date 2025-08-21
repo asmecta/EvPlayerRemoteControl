@@ -107,19 +107,21 @@ onMounted(() => {
       },
       userActions: {
         hotkeys: function (event): void {
-          if (player.value) {
-            Keyboard.handlerKeyCode(player.value, event.keyCode)
+          if (playerD.value) {
+            console.log(event)
+            Keyboard.handlerKeyCode(playerD.value, event.keyCode)
           }
         }
       }
     })
-    const keyboard = new Keyboard(playerD.value)
-    keyboard.bind()
+    const keyboardD = new Keyboard(playerD.value)
+    keyboardD.bind()
   }
 })
 
 onUnmounted(() => {
   if (player.value) player.value.dispose()
+  if (playerD.value) playerD.value.dispose()
 })
 
 defineExpose({

@@ -15,10 +15,6 @@ expressApp.set('view engine', 'ejs')
 expressApp.set('views', path.join(__dirname, '..', 'views'))
 
 export function startExpressServer(mainWindow: BrowserWindow | null): void {
-  expressApp.get('/home', (_: Request, res: Response) => {
-    res.send('Hello Index')
-  })
-
   expressApp.get('/', (_: Request, res: Response) => {
     const playList = store.get('playlist')
     res.render('index', { title: '潮起钱江，金融赋能', data: playList })
