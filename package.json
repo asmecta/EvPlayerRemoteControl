@@ -32,7 +32,8 @@
     "cors": "^2.8.5",
     "ejs": "^3.1.10",
     "electron-store": "^8.1.0",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "lodash.throttle": "^4.1.1"
   },
   "devDependencies": {
     "@codeporter/overlayscrollbars-vue": "^1.0.0",
@@ -40,6 +41,7 @@
     "@electron/notarize": "^1.2.3",
     "@rushstack/eslint-patch": "^1.2.0",
     "@types/electron": "^1.6.10",
+    "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^16.18.21",
     "@types/overlayscrollbars": "^1.12.1",
     "@types/video.js": "^7.3.51",

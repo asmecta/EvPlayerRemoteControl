@@ -30,7 +30,7 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
-      webSecurity: false,
+      webSecurity: true,
       sandbox: false
     }
   })

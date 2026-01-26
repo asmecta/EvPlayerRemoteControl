@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import videojs from 'video.js'
+import throttle from 'lodash.throttle'
 
 import { getVideoInfoList } from '../utils/video'
 import Keyboard from '../utils/keyboard'
@@ -11,6 +12,7 @@ import { IpcEvents } from '../../../common/ipcEvents'
 const playerRef = ref<HTMLVideoElement>()
 const player = ref<videojs.Player>()
 const currentVideo = ref<VideoInfo | null>()
+let saveProgress: ReturnType<typeof throttle> | null = null
 
 const play = (video: VideoInfo): void => {
   if (currentVideo.value?.path !== video.path) {
@@ -19,6 +21,10 @@ const play = (video: VideoInfo): void => {
       player.value?.pause()
       player.value?.src(`file:///${video.path}`)
       player.value?.on('loadeddata', () => {
+        const lastPlayedTime = localStorage.getItem(video.path)
+        if (lastPlayedTime) {
+          player.value?.currentTime(parseFloat(lastPlayedTime))
+        }
         player.value?.play()
       })
     }
@@ -77,11 +83,23 @@ onMounted(() => {
     })
     const keyboard = new Keyboard(player.value)
     keyboard.bind()
+
+    saveProgress = throttle(() => {
+      if (currentVideo.value && player.value) {
+        localStorage.setItem(currentVideo.value.path, player.value.currentTime().toString())
+      }
+    }, 1000)
+
+    player.value.on('timeupdate', saveProgress)
+    player.value.on('pause', saveProgress)
   }
 })
 
 onUnmounted(() => {
-  if (player.value) player.value.dispose()
+  if (player.value) {
+    saveProgress?.flush()
+    player.value.dispose()
+  }
 })
 
 defineExpose({
