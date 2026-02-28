@@ -50,16 +50,36 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  const ps: Promise<VideoInfo | null>[] = []
-  videoFiles.forEach((f) => {
-    ps.push(getVideoInfo(f.name, f.path))
-  })
+  // ⚡ Bolt: Concurrency-limited video processing to prevent renderer freeze
+  // Processing many video/canvas DOM elements simultaneously causes massive memory
+  // spikes and UI freezing. We limit concurrency to 3 to keep the app responsive.
+  const CONCURRENCY_LIMIT = 3
+  const results: (VideoInfo | null)[] = new Array(videoFiles.length).fill(null)
+
+  let currentIndex = 0
+
+  const worker = async (): Promise<void> => {
+    while (currentIndex < videoFiles.length) {
+      const index = currentIndex++
+      const f = videoFiles[index]
+      try {
+        results[index] = await getVideoInfo(f.name, f.path)
+      } catch (e) {
+        results[index] = null
+      }
+    }
+  }
+
+  const workers: Promise<void>[] = []
+  for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, videoFiles.length); i++) {
+    workers.push(worker())
+  }
+
+  await Promise.all(workers)
 
   const videoInfoList: VideoInfo[] = []
-  await Promise.all(ps).then((results) => {
-    results.forEach((videoInfo) => {
-      if (videoInfo) videoInfoList.push(videoInfo)
-    })
+  results.forEach((videoInfo) => {
+    if (videoInfo) videoInfoList.push(videoInfo)
   })
 
   return videoInfoList
