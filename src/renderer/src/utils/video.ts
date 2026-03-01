@@ -35,6 +35,9 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       const min = Math.floor(duration / 60)
       const sec = Math.floor(duration % 60)
 
+      video.removeAttribute('src') // Allow faster garbage collection
+      video.load()
+
       resolve({
         path: src,
         name,
@@ -44,22 +47,27 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       })
     }
     video.onerror = (): void => {
+      video.removeAttribute('src')
+      video.load()
       resolve(null)
     }
   })
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  const ps: Promise<VideoInfo | null>[] = []
-  videoFiles.forEach((f) => {
-    ps.push(getVideoInfo(f.name, f.path))
-  })
+  // Limit concurrency to 3 to prevent renderer freezing on many videos
+  const concurrencyLimit = 3
+  const results: (VideoInfo | null)[] = []
+
+  for (let i = 0; i < videoFiles.length; i += concurrencyLimit) {
+    const batch = videoFiles.slice(i, i + concurrencyLimit)
+    const batchResults = await Promise.all(batch.map((f) => getVideoInfo(f.name, f.path)))
+    results.push(...batchResults)
+  }
 
   const videoInfoList: VideoInfo[] = []
-  await Promise.all(ps).then((results) => {
-    results.forEach((videoInfo) => {
-      if (videoInfo) videoInfoList.push(videoInfo)
-    })
+  results.forEach((videoInfo) => {
+    if (videoInfo) videoInfoList.push(videoInfo)
   })
 
   return videoInfoList
