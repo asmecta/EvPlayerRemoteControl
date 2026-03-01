@@ -39,15 +39,15 @@ You can download from [Release](https://github.com/alex8088/EvPlayer/releases) p
 
 ## Shortcuts
 
-|   Shortcut   | Description         |
-| :----------- | :------------------ |
-| `Space`      | Play or Pause       |
-| `→`          | Forward 5 seconds   |
-| `←`          | Rewind 5 seconds    |
-| `↑`          | Volume up           |
-| `↓`          | Volume down         |
-| `m`          | Muted or not        |
-| `f` or `F11` | Fullscreen or not   |
+| Shortcut     | Description       |
+| :----------- | :---------------- |
+| `Space`      | Play or Pause     |
+| `→`          | Forward 5 seconds |
+| `←`          | Rewind 5 seconds  |
+| `↑`          | Volume up         |
+| `↓`          | Volume down       |
+| `m`          | Muted or not      |
+| `f` or `F11` | Fullscreen or not |
 
 ## Develop
 

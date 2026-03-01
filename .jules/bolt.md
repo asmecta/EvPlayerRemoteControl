@@ -1,0 +1,3 @@
+## 2024-05-18 - Prevent Renderer Freezing & OOM on Bulk Video Import
+**Learning:** Generating thumbnails by instantiating `document.createElement("video")` without concurrency limits can freeze the Electron renderer and cause Out of Memory errors when dropping a large number of video files.
+**Action:** Always batch or queue operations that instantiate native DOM elements (like `<video>` or `<canvas>`). Furthermore, when done with a temporary `<video>` element, immediately call `video.removeAttribute("src")` and `video.load()` to force the browser to release the media resource and allow immediate garbage collection.
