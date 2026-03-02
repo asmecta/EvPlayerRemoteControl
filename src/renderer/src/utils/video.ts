@@ -6,6 +6,13 @@ import { VideoFile, VideoInfo } from 'src/common/types'
 const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
   return new Promise((resolve) => {
     const video = document.createElement('video')
+
+    // Cleanup function to ensure proper garbage collection of DOM elements and prevent memory leaks
+    const cleanup = (): void => {
+      video.removeAttribute('src')
+      video.load()
+    }
+
     video.setAttribute('src', `file:///${src}`)
     video.onloadedmetadata = (): void => {
       video.currentTime = 1
@@ -35,6 +42,7 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       const min = Math.floor(duration / 60)
       const sec = Math.floor(duration % 60)
 
+      cleanup()
       resolve({
         path: src,
         name,
@@ -44,23 +52,26 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       })
     }
     video.onerror = (): void => {
+      cleanup()
       resolve(null)
     }
   })
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  const ps: Promise<VideoInfo | null>[] = []
-  videoFiles.forEach((f) => {
-    ps.push(getVideoInfo(f.name, f.path))
-  })
-
   const videoInfoList: VideoInfo[] = []
-  await Promise.all(ps).then((results) => {
+  // Process videos in chunks to avoid blocking the main thread / freezing the renderer
+  const CONCURRENCY_LIMIT = 4
+
+  for (let i = 0; i < videoFiles.length; i += CONCURRENCY_LIMIT) {
+    const chunk = videoFiles.slice(i, i + CONCURRENCY_LIMIT)
+    const ps = chunk.map((f) => getVideoInfo(f.name, f.path))
+
+    const results = await Promise.all(ps)
     results.forEach((videoInfo) => {
       if (videoInfo) videoInfoList.push(videoInfo)
     })
-  })
+  }
 
   return videoInfoList
 }
