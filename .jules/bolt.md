@@ -1,0 +1,3 @@
+## 2024-05-24 - [DOM Hidden Video Processing Optimization]
+**Learning:** Extracting video info (thumbnails and duration) using hidden `<video>` elements with `Promise.all` causes memory leaks and renderer freezes if unbounded concurrency is used. Additionally, hidden `<video>` elements remain in memory unless explicitly cleaned up by removing the `src` attribute and calling `load()`.
+**Action:** Always implement a concurrency limit (e.g., worker pool) when processing large numbers of media files in the DOM, and explicitly trigger garbage collection by detaching media sources via `video.removeAttribute('src')` and `video.load()`.
