@@ -6,6 +6,14 @@ import { VideoFile, VideoInfo } from 'src/common/types'
 const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
   return new Promise((resolve) => {
     const video = document.createElement('video')
+
+    // Cleanup function to prevent memory leaks and free up resources
+    // The browser might keep the video in memory if we don't clear the src
+    const cleanup = (): void => {
+      video.removeAttribute('src')
+      video.load()
+    }
+
     video.setAttribute('src', `file:///${src}`)
     video.onloadedmetadata = (): void => {
       video.currentTime = 1
@@ -35,6 +43,8 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       const min = Math.floor(duration / 60)
       const sec = Math.floor(duration % 60)
 
+      cleanup()
+
       resolve({
         path: src,
         name,
@@ -44,22 +54,36 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
       })
     }
     video.onerror = (): void => {
+      cleanup()
       resolve(null)
     }
   })
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  const ps: Promise<VideoInfo | null>[] = []
-  videoFiles.forEach((f) => {
-    ps.push(getVideoInfo(f.name, f.path))
-  })
+  // Concurrency limit to prevent renderer freezing when processing many videos
+  const concurrencyLimit = 3
+  const results: (VideoInfo | null)[] = new Array(videoFiles.length)
+  let currentIndex = 0
+
+  const worker = async (): Promise<void> => {
+    while (currentIndex < videoFiles.length) {
+      const index = currentIndex++
+      const f = videoFiles[index]
+      results[index] = await getVideoInfo(f.name, f.path)
+    }
+  }
+
+  const workers: Promise<void>[] = []
+  for (let i = 0; i < Math.min(concurrencyLimit, videoFiles.length); i++) {
+    workers.push(worker())
+  }
+
+  await Promise.all(workers)
 
   const videoInfoList: VideoInfo[] = []
-  await Promise.all(ps).then((results) => {
-    results.forEach((videoInfo) => {
-      if (videoInfo) videoInfoList.push(videoInfo)
-    })
+  results.forEach((videoInfo) => {
+    if (videoInfo) videoInfoList.push(videoInfo)
   })
 
   return videoInfoList
