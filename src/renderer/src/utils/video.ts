@@ -50,17 +50,27 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  const ps: Promise<VideoInfo | null>[] = []
-  videoFiles.forEach((f) => {
-    ps.push(getVideoInfo(f.name, f.path))
-  })
+  // Limit concurrency to prevent freezing the UI when processing many files
+  const concurrency = 3
+  const results: (VideoInfo | null)[] = new Array(videoFiles.length)
+  let currentIndex = 0
 
-  const videoInfoList: VideoInfo[] = []
-  await Promise.all(ps).then((results) => {
-    results.forEach((videoInfo) => {
-      if (videoInfo) videoInfoList.push(videoInfo)
-    })
-  })
+  const worker = async (): Promise<void> => {
+    while (currentIndex < videoFiles.length) {
+      const index = currentIndex
+      currentIndex++
+      const f = videoFiles[index]
+      if (f) {
+        results[index] = await getVideoInfo(f.name, f.path)
+      }
+    }
+  }
 
-  return videoInfoList
+  await Promise.all(
+    Array(Math.min(concurrency, videoFiles.length))
+      .fill(null)
+      .map(() => worker())
+  )
+
+  return results.filter((v): v is VideoInfo => v !== null)
 }
