@@ -53,6 +53,7 @@ export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoIn
   // ⚡ Bolt Optimization: Limit concurrency to avoid UI freeze
   // Video decoding is expensive, processing too many at once freezes the renderer
   const CONCURRENCY_LIMIT = 3
+
   const results: (VideoInfo | null)[] = new Array(videoFiles.length)
   let currentIndex = 0
 
@@ -77,4 +78,5 @@ export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoIn
   await Promise.all(workers)
 
   return results.filter((info): info is VideoInfo => info !== null)
+
 }
