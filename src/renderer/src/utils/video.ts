@@ -50,27 +50,33 @@ const getVideoInfo = (name: string, src: string): Promise<VideoInfo | null> => {
 }
 
 export const getVideoInfoList = async (videoFiles: VideoFile[]): Promise<VideoInfo[]> => {
-  // Limit concurrency to prevent freezing the UI when processing many files
-  const concurrency = 3
+  // ⚡ Bolt Optimization: Limit concurrency to avoid UI freeze
+  // Video decoding is expensive, processing too many at once freezes the renderer
+  const CONCURRENCY_LIMIT = 3
+
   const results: (VideoInfo | null)[] = new Array(videoFiles.length)
   let currentIndex = 0
 
   const worker = async (): Promise<void> => {
     while (currentIndex < videoFiles.length) {
-      const index = currentIndex
-      currentIndex++
-      const f = videoFiles[index]
-      if (f) {
-        results[index] = await getVideoInfo(f.name, f.path)
+      const index = currentIndex++
+      const file = videoFiles[index]
+      try {
+        results[index] = await getVideoInfo(file.name, file.path)
+      } catch (e) {
+        console.error(`Failed to get video info for ${file.path}`, e)
+        results[index] = null
       }
     }
   }
 
-  await Promise.all(
-    Array(Math.min(concurrency, videoFiles.length))
-      .fill(null)
-      .map(() => worker())
-  )
+  const workers: Promise<void>[] = []
+  for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, videoFiles.length); i++) {
+    workers.push(worker())
+  }
 
-  return results.filter((v): v is VideoInfo => v !== null)
+  await Promise.all(workers)
+
+  return results.filter((info): info is VideoInfo => info !== null)
+
 }
